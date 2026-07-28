@@ -11,7 +11,7 @@ export const SocketProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    socketRef.current = io('/', { withCredentials: true, autoConnect: true });
+    socketRef.current = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', { withCredentials: true, autoConnect: true });
     const socket = socketRef.current;
 
     socket.on('online_users', (users) => setOnlineUsers(users));
