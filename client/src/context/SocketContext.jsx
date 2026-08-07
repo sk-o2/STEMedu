@@ -11,7 +11,9 @@ export const SocketProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    socketRef.current = io( import.meta.env.VITE_API_URL.replace("/api", "") || 'http://localhost:5000', { withCredentials: true, autoConnect: true });
+    const rawUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').trim();
+    const socketUrl = rawUrl.replace(/\/api\/?$/, ''); // strip trailing /api if present
+    socketRef.current = io(socketUrl, { withCredentials: true, autoConnect: true });
     const socket = socketRef.current;
 
     socket.on('online_users', (users) => setOnlineUsers(users));
