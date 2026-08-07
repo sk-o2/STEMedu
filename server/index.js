@@ -90,6 +90,23 @@ server.listen(PORT, () => {
   console.log(`\n🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   console.log(`📡 Socket.io ready`);
   console.log(`🌐 API: http://localhost:${PORT}/api/health\n`);
+
+  // ── Keep-alive ping (production only) ─────────────────────────────────────
+  // Render free/starter tier spins the server down after 15 min of inactivity,
+  // causing 30–60s cold-start delays for the next user.
+  // Pinging our own health endpoint every 14 min keeps the process alive.
+  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+    const https = require('https');
+    const pingUrl = `${process.env.RENDER_EXTERNAL_URL}/api/health`;
+    setInterval(() => {
+      https.get(pingUrl, (res) => {
+        console.log(`🏓 Keep-alive ping → ${res.statusCode}`);
+      }).on('error', (err) => {
+        console.warn('Keep-alive ping failed:', err.message);
+      });
+    }, 14 * 60 * 1000); // every 14 minutes
+    console.log(`🏓 Keep-alive enabled → pinging ${pingUrl} every 14 min`);
+  }
 });
 
 module.exports = { app, server };

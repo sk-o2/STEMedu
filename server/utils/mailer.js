@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// Uses Gmail "service" shorthand — no SMTP host/port needed.
+// Uses Gmail SMTP with a persistent pooled connection.
 // Requirements:
 //   SMTP_USER  = your Gmail address (e.g. circuithub50@gmail.com)
 //   SMTP_PASS  = a Gmail App Password (NOT your real password)
@@ -9,11 +9,16 @@ const nodemailer = require('nodemailer');
 // Generate an App Password:
 //   Google Account → Security → 2-Step Verification → App Passwords
 //
-// IMPORTANT: The Gmail SMTP server REQUIRES that the "from" address matches
-// the authenticated SMTP_USER account. Using a different FROM_EMAIL causes
-// silent delivery failures or auth rejections.
+// IMPORTANT: Gmail SMTP requires "from" to match the authenticated SMTP_USER.
+// Using a different FROM_EMAIL causes silent delivery failures or auth rejections.
 
-const createTransporter = () => {
+// Single shared transporter — created once, reused for every email.
+// pool:true keeps the TCP connection to Gmail open between sends (much faster).
+let _transporter = null;
+
+const getTransporter = () => {
+  if (_transporter) return _transporter;
+
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
@@ -23,10 +28,25 @@ const createTransporter = () => {
     );
   }
 
-  return nodemailer.createTransport({
+  _transporter = nodemailer.createTransport({
     service: 'gmail',
+    pool: true,          // reuse TCP connections instead of opening a new one per email
+    maxConnections: 3,   // keep up to 3 connections open
+    maxMessages: 100,    // recycle connection after 100 messages
     auth: { user, pass },
   });
+
+  // Verify credentials once at startup so misconfiguration is caught early
+  _transporter.verify((err) => {
+    if (err) {
+      console.error('❌ SMTP connection failed:', err.message);
+      _transporter = null; // reset so next call retries
+    } else {
+      console.log('✅ SMTP connection ready — emails will be delivered via', user);
+    }
+  });
+
+  return _transporter;
 };
 
 // The "from" field: display name from FROM_NAME, address MUST be SMTP_USER for Gmail
@@ -74,7 +94,7 @@ const baseTemplate = (content) => `
 // ── Verification Email ───────────────────────────────────────────────────────
 
 exports.sendVerificationEmail = async (user, verificationUrl) => {
-  const transporter = createTransporter();
+  const transporter = getTransporter();
   const html = baseTemplate(`
     <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">Verify your email address</h2>
     <p style="margin:0 0 24px;color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -101,7 +121,7 @@ exports.sendVerificationEmail = async (user, verificationUrl) => {
 // ── Password Reset Email ─────────────────────────────────────────────────────
 
 exports.sendPasswordResetEmail = async (user, resetUrl) => {
-  const transporter = createTransporter();
+  const transporter = getTransporter();
   const html = baseTemplate(`
     <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">Reset your password</h2>
     <p style="margin:0 0 24px;color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -276,7 +296,7 @@ exports.sendMentoringEmail = async (type, booking) => {
   if (!template) return;
   const { to, subject, body } = template(booking);
   if (!to) return;
-  const transporter = createTransporter();
+  const transporter = getTransporter();
   await transporter.sendMail({
     from: getFromAddress(),
     to,
