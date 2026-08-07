@@ -129,6 +129,10 @@ const BookMentoringPage = () => {
     try {
       // Load Razorpay Checkout SDK
       const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded || !window.Razorpay) {
+        toast.error('Payment gateway failed to load. Please refresh and try again.');
+        return;
+      }
 
       // Create Razorpay Order
       const res = await createRazorpayMentoringOrder({
@@ -140,24 +144,17 @@ const BookMentoringPage = () => {
       });
 
       const { orderId, amount, currency, key, bookingPayload } = res.data;
+      // Use key from backend; fall back to Vite env var if needed
+      const razorpayKey = key || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-      // If Razorpay SDK not loaded or in fallback demo mode
-      if (!scriptLoaded || !window.Razorpay || res.data.isDemo || key === 'rzp_test_your_key_id') {
-        const verifyRes = await verifyRazorpayMentoringPayment({
-          razorpay_order_id: orderId || `order_demo_${Date.now()}`,
-          razorpay_payment_id: `pay_demo_${Date.now()}`,
-          razorpay_signature: 'demo_signature',
-          bookingPayload,
-        });
-        setCompletedBooking(verifyRes.data.booking);
-        setStep(4);
-        toast.success('🎉 Payment verified & session booked!');
+      if (!razorpayKey) {
+        toast.error('Payment configuration error. Please contact support.');
         return;
       }
 
       // Open official Razorpay Checkout Modal
       const options = {
-        key: key,
+        key: razorpayKey,
         amount: amount,
         currency: currency || 'INR',
         name: 'STEMEd Mentoring',
@@ -197,6 +194,10 @@ const BookMentoringPage = () => {
       };
 
       const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.on('payment.failed', function (response) {
+        toast.error(`Payment failed: ${response.error?.description || 'Unknown error'}`);
+        setBooking(false);
+      });
       razorpayInstance.open();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to initiate Razorpay payment');

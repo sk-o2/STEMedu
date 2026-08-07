@@ -44,8 +44,12 @@ const CourseDetailPage = () => {
     try {
       // Load Razorpay SDK
       const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded || !window.Razorpay) {
+        toast.error('Payment gateway failed to load. Please refresh and try again.');
+        return;
+      }
 
-      // Create Razorpay Order
+      // Create Razorpay Order on backend
       const res = await createRazorpayCourseOrder(course._id);
 
       if (res.data.isFree) {
@@ -56,24 +60,17 @@ const CourseDetailPage = () => {
       }
 
       const { orderId, amount, currency, key } = res.data;
+      // Use key from backend; fall back to Vite env var if needed
+      const razorpayKey = key || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-      // Fallback if Razorpay SDK not available or in demo key mode
-      if (!scriptLoaded || !window.Razorpay || key === 'rzp_test_your_key_id') {
-        const verifyRes = await verifyRazorpayCoursePayment({
-          razorpay_order_id: orderId || `order_demo_${Date.now()}`,
-          razorpay_payment_id: `pay_demo_${Date.now()}`,
-          razorpay_signature: 'demo_signature',
-          courseId: course._id,
-        });
-        await loadUser();
-        toast.success(verifyRes.data.message);
-        navigate(`/courses/lms/${course.slug}`);
+      if (!razorpayKey) {
+        toast.error('Payment configuration error. Please contact support.');
         return;
       }
 
-      // Open Razorpay Popup
+      // Open Razorpay Modal
       const options = {
-        key: key,
+        key: razorpayKey,
         amount: amount,
         currency: currency || 'INR',
         name: 'STEMEd Courses',
@@ -113,6 +110,10 @@ const CourseDetailPage = () => {
       };
 
       const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.on('payment.failed', function (response) {
+        toast.error(`Payment failed: ${response.error?.description || 'Unknown error'}`);
+        setEnrolling(false);
+      });
       razorpayInstance.open();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to initiate Razorpay checkout');

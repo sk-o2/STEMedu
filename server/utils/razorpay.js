@@ -25,8 +25,10 @@ exports.createRazorpayOrder = async ({ amount, currency = 'INR', receipt, notes 
     return order;
   } catch (error) {
     console.error('Error creating Razorpay order:', error);
-    // If test mode / invalid key, generate fallback order details for seamless testing
-    if (error.statusCode === 401 || process.env.RAZORPAY_KEY_ID === 'rzp_test_your_key_id' || !process.env.RAZORPAY_KEY_ID) {
+    // Only generate a demo fallback order when still running with placeholder credentials
+    const isPlaceholderKey = !process.env.RAZORPAY_KEY_ID ||
+      process.env.RAZORPAY_KEY_ID === 'rzp_test_your_key_id';
+    if (error.statusCode === 401 && isPlaceholderKey) {
       return {
         id: `order_demo_${Date.now()}`,
         entity: 'order',
@@ -46,12 +48,17 @@ exports.createRazorpayOrder = async ({ amount, currency = 'INR', receipt, notes 
 
 // Verify Razorpay Payment Signature
 exports.verifyRazorpaySignature = ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
+  // Demo order: skip signature check (only reaches here if placeholder key still in use)
   if (razorpay_order_id && razorpay_order_id.startsWith('order_demo_')) {
-    // Demo order simulation validation
     return true;
   }
+
   const secret = process.env.RAZORPAY_KEY_SECRET;
-  if (!secret) return true; // test fallback
+  if (!secret) {
+    // Refuse verification when key secret is missing — do not mark as paid
+    console.error('[Razorpay] RAZORPAY_KEY_SECRET is not set — rejecting payment verification');
+    return false;
+  }
 
   const body = razorpay_order_id + '|' + razorpay_payment_id;
   const expectedSignature = crypto
