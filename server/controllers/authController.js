@@ -42,12 +42,14 @@ exports.register = async (req, res, next) => {
 
     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
 
-    // Fire email in background — do NOT await, so the response returns instantly
-    sendVerificationEmail(user, verificationUrl).catch((emailErr) =>
-      console.error('Verification email failed:', emailErr.message)
-    );
+    try {
+      await sendVerificationEmail(user, verificationUrl);
+    } catch (emailErr) {
+      // Don't block registration if email fails — just log it
+      console.error('Verification email failed:', emailErr.message);
+    }
 
-    // Return token immediately — user is logged in but flagged as unverified
+    // Return token so user is logged in but flagged as unverified
     sendToken(user, 201, res);
   } catch (err) { next(err); }
 };
