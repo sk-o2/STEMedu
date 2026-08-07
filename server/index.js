@@ -30,7 +30,7 @@ const server = http.createServer(app);
 
 // Socket.io setup
 const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_URL , methods: ['GET', 'POST'], credentials: true, },
+  cors: { origin: process.env.CLIENT_URL || "http://localhost:5173" , methods: ['GET', 'POST'], credentials: true, },
 });
 initSocket(io);
 app.set('io', io); // Make io accessible in controllers
