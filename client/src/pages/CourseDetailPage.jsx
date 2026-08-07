@@ -60,9 +60,15 @@ const CourseDetailPage = () => {
       }
 
       const { orderId, amount, currency, key } = res.data;
+
+      // Guard: backend must return a real order ID and key
+      if (!orderId || !key) {
+        toast.error('Payment setup failed — missing order details from server.');
+        return;
+      }
+
       // Use key from backend; fall back to Vite env var if needed
       const razorpayKey = key || import.meta.env.VITE_RAZORPAY_KEY_ID;
-
       if (!razorpayKey) {
         toast.error('Payment configuration error. Please contact support.');
         return;
@@ -116,7 +122,13 @@ const CourseDetailPage = () => {
       });
       razorpayInstance.open();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to initiate Razorpay checkout');
+      const status = err.response?.status;
+      const msg = err.response?.data?.message || err.message || 'Failed to initiate Razorpay checkout';
+      if (status === 503) {
+        toast.error('⚠️ Payment gateway not configured on server. Contact support.');
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setEnrolling(false);
     }
