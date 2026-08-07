@@ -1,16 +1,37 @@
 const nodemailer = require('nodemailer');
 
 // Uses Gmail "service" shorthand — no SMTP host/port needed.
-// Requires SMTP_USER to be a Gmail address and SMTP_PASS to be a Gmail App Password.
-// To generate an App Password: Google Account → Security → 2-Step Verification → App Passwords
-const createTransporter = () =>
-  nodemailer.createTransport({
+// Requirements:
+//   SMTP_USER  = your Gmail address (e.g. circuithub50@gmail.com)
+//   SMTP_PASS  = a Gmail App Password (NOT your real password)
+//   FROM_NAME  = display name shown in the email "from" field
+//
+// Generate an App Password:
+//   Google Account → Security → 2-Step Verification → App Passwords
+//
+// IMPORTANT: The Gmail SMTP server REQUIRES that the "from" address matches
+// the authenticated SMTP_USER account. Using a different FROM_EMAIL causes
+// silent delivery failures or auth rejections.
+
+const createTransporter = () => {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    throw new Error(
+      'Email credentials not configured. Set SMTP_USER and SMTP_PASS in your server environment variables.'
+    );
+  }
+
+  return nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    auth: { user, pass },
   });
+};
+
+// The "from" field: display name from FROM_NAME, address MUST be SMTP_USER for Gmail
+const getFromAddress = () =>
+  `"${process.env.FROM_NAME || 'STEMEd'}" <${process.env.SMTP_USER}>`;
 
 // ── Email Templates ──────────────────────────────────────────────────────────
 
@@ -70,7 +91,7 @@ exports.sendVerificationEmail = async (user, verificationUrl) => {
   `);
 
   await transporter.sendMail({
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+    from: getFromAddress(),
     to: user.email,
     subject: '✅ Verify your STEMEd account',
     html,
@@ -97,7 +118,7 @@ exports.sendPasswordResetEmail = async (user, resetUrl) => {
   `);
 
   await transporter.sendMail({
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+    from: getFromAddress(),
     to: user.email,
     subject: '🔑 Password Reset - STEMEd',
     html,
@@ -257,7 +278,7 @@ exports.sendMentoringEmail = async (type, booking) => {
   if (!to) return;
   const transporter = createTransporter();
   await transporter.sendMail({
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+    from: getFromAddress(),
     to,
     subject,
     html: baseTemplate(body),
