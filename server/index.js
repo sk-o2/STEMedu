@@ -80,18 +80,13 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/mentoring', mentoringRoutes);
 
-// Serve React client in production
-if (process.env.NODE_ENV === 'production') {
-  const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
-  app.use(express.static(clientDistPath));
-  // SPA fallback — all non-API routes serve index.html so React Router works
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'));
-  });
-} else {
-  // 404 handler (API-only in development)
-  app.use((req, res) => res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` }));
-}
+// Serve React client (works regardless of NODE_ENV)
+const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(clientDistPath));
+// SPA fallback — all non-API routes serve index.html so React Router works
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+});
 
 // Global error handler
 app.use(errorHandler);
