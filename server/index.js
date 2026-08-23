@@ -80,23 +80,31 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/mentoring', mentoringRoutes);
 
-// Serve React client static files
-const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
+// Resolve client/dist path — works whether CWD is /server or project root
 const fs = require('fs');
+const possibleDistPaths = [
+  path.join(__dirname, '..', 'client', 'dist'),  // running from /server
+  path.join(__dirname, 'client', 'dist'),         // running from project root
+  path.join(process.cwd(), 'client', 'dist'),     // Render sets CWD to root
+  path.join(process.cwd(), '..', 'client', 'dist'),
+];
+const clientDistPath = possibleDistPaths.find(p => fs.existsSync(p)) || possibleDistPaths[0];
+console.log(`📁 Serving client from: ${clientDistPath} (exists: ${fs.existsSync(clientDistPath)})`);
+
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
 }
 
-// Global error handler (must be before SPA fallback so API errors return JSON)
+// Global error handler
 app.use(errorHandler);
 
-// SPA fallback — ONLY for non-API routes, serves index.html so React Router works on refresh
-app.get(/^(?!\/api).*$/, (req, res) => {
+// SPA fallback — serves index.html for ALL non-API routes so React Router works on refresh
+app.get('*', (req, res) => {
   const indexPath = path.join(clientDistPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    res.status(200).send('Server is running. Build the client to serve the frontend.');
+    res.status(404).send(`Cannot find client build at ${clientDistPath}. Run: cd client && npm run build`);
   }
 });
 
