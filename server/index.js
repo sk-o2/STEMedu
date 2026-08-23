@@ -80,16 +80,25 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/mentoring', mentoringRoutes);
 
-// Serve React client (works regardless of NODE_ENV)
+// Serve React client static files
 const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
-app.use(express.static(clientDistPath));
-// SPA fallback — all non-API routes serve index.html so React Router works
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientDistPath, 'index.html'));
-});
+const fs = require('fs');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+}
 
-// Global error handler
+// Global error handler (must be before SPA fallback so API errors return JSON)
 app.use(errorHandler);
+
+// SPA fallback — ONLY for non-API routes, serves index.html so React Router works on refresh
+app.get(/^(?!\/api).*$/, (req, res) => {
+  const indexPath = path.join(clientDistPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(200).send('Server is running. Build the client to serve the frontend.');
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

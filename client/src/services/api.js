@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api', withCredentials: true });
+// Use Vite proxy (/api) for local dev — avoids hitting the production Render server
+const BASE_URL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api');
+const API = axios.create({ baseURL: BASE_URL, withCredentials: true });
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
