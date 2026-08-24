@@ -121,6 +121,29 @@ app.get('*', (req, res) => {
   }
 });
 
+
+
+
+
+
+app.get('/ai-assistant', (req, res) => {
+  res.send(aiRoutes); // Or res.render/res.sendFile
+});
+app.get('/api/*', (req, res) => {
+  res.status(404).json({ success: false, message: 'API route not found' });
+});
+
+
+
+
+
+
+
+
+
+
+
+
 // Global error handler — must be last
 app.use(errorHandler);
 
