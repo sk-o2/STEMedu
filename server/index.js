@@ -92,14 +92,27 @@ const clientDistPath = possibleDistPaths.find(p => fs.existsSync(p)) || possible
 console.log(`📁 Serving client from: ${clientDistPath} (exists: ${fs.existsSync(clientDistPath)})`);
 
 if (fs.existsSync(clientDistPath)) {
-  app.use(express.static(clientDistPath));
+  app.use(express.static(clientDistPath, {
+    // Ensure JS/CSS files are served with correct MIME types
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      }
+    },
+  }));
 }
 
-// Global error handler
-app.use(errorHandler);
-
-// SPA fallback — serves index.html for ALL non-API routes so React Router works on refresh
+// SPA fallback — serves index.html for React Router routes on page refresh
+// Excludes static asset paths to prevent serving index.html for JS/CSS files
 app.get('*', (req, res) => {
+  // If the request is for a static asset (has a file extension), return 404
+  // instead of index.html to avoid MIME type mismatch errors
+  if (/\.\w+$/.test(req.path) && !req.path.endsWith('.html')) {
+    return res.status(404).send(`Asset not found: ${req.path}`);
+  }
+
   const indexPath = path.join(clientDistPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
@@ -107,6 +120,9 @@ app.get('*', (req, res) => {
     res.status(404).send(`Cannot find client build at ${clientDistPath}. Run: cd client && npm run build`);
   }
 });
+
+// Global error handler — must be last
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
