@@ -1,6 +1,7 @@
 services:
+  # Backend API service (Express + Socket.io)
   - type: web
-    name: stemedu
+    name: stemedu-api
     env: node
     region: oregon
     plan: free
@@ -10,3 +11,17 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+
+  # Frontend static site (React + Vite)
+  - type: web
+    name: stemedu-frontend
+    env: static
+    region: oregon
+    plan: free
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
