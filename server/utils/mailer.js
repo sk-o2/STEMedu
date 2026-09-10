@@ -3,14 +3,24 @@ const nodemailer = require('nodemailer');
 // Uses Gmail "service" shorthand — no SMTP host/port needed.
 // Requires SMTP_USER to be a Gmail address and SMTP_PASS to be a Gmail App Password.
 // To generate an App Password: Google Account → Security → 2-Step Verification → App Passwords
-const createTransporter = () =>
-  nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+let transporter = null;
+const createTransporter = () => {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      // Fail fast on Render cold-starts — don't let a broken SMTP connection
+      // stall the event loop for the OS TCP timeout (~2 minutes).
+      connectionTimeout: 10_000,  // 10 s to establish TCP connection
+      greetingTimeout:   10_000,  // 10 s to receive the SMTP greeting (220)
+      socketTimeout:     15_000,  // 15 s of inactivity before giving up
+    });
+  }
+  return transporter;
+};
 
 // ── Email Templates ──────────────────────────────────────────────────────────
 

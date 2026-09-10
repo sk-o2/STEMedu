@@ -40,14 +40,13 @@ exports.register = async (req, res, next) => {
       emailVerificationExpire: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
 
+    // Build the verification URL from the raw (unhashed) token
     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
 
-    try {
-      await sendVerificationEmail(user, verificationUrl);
-    } catch (emailErr) {
-      // Don't block registration if email fails — just log it
+    // Send verification email asynchronously in background so response isn't delayed by SMTP network overhead
+    sendVerificationEmail(user, verificationUrl).catch((emailErr) => {
       console.error('Verification email failed:', emailErr.message);
-    }
+    });
 
     // Return token so user is logged in but flagged as unverified
     sendToken(user, 201, res);
