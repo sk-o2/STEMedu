@@ -63,7 +63,11 @@ const LandingPage = () => {
         message: `Requested demo for ${courseName}`,
       }));
       setTimeout(() => {
-        contactRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (contactRef.current) {
+          const NAVBAR_HEIGHT = 68; // matches .navbar-inner height in Navbar.css
+          const top = contactRef.current.getBoundingClientRect().top + window.scrollY - NAVBAR_HEIGHT - 16;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
       }, 500);
     }
   }, [location]);
