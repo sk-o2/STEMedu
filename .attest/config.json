@@ -1,0 +1,37 @@
+{
+  "language": "auto",
+  "review": {
+    "enabled": true,
+    "ai": true
+  },
+  "security": {
+    "enabled": true
+  },
+  "tests": {
+    "enabled": true
+  },
+  "build": {
+    "enabled": true
+  },
+  "policy": {
+    "blockOn": [
+      "critical",
+      "high"
+    ],
+    "allowWarnings": true
+  },
+  "ignore": [
+    "node_modules",
+    "dist",
+    "coverage",
+    ".git",
+    "build"
+  ],
+  "privacy": {
+    "storeSource": false,
+    "storeReview": true
+  },
+  "ai": {
+    "provider": "anthropic"
+  }
+}

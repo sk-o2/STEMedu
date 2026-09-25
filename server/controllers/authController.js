@@ -43,7 +43,7 @@ exports.register = async (req, res, next) => {
     // Build the verification URL from the raw (unhashed) token
     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
 
-    // Send verification email asynchronously in background so response isn't delayed by SMTP network overhead
+    // Send verification email asynchronously in background so response isn't delayed by email API network overhead
     sendVerificationEmail(user, verificationUrl).catch((emailErr) => {
       console.error('Verification email failed:', emailErr.message);
     });

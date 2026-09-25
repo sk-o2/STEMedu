@@ -1,0 +1,6 @@
+# Attest ignore rules (gitignore syntax)
+*.lock
+*.log
+coverage/
+dist/
+build/

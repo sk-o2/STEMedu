@@ -1,0 +1,31 @@
+{
+  "reviewId": "7d8cafbc-ba46-4756-b8af-18e80935c926",
+  "status": "passed",
+  "score": 10,
+  "summary": "No issues found.",
+  "checks": [
+    {
+      "name": "Git changes detected",
+      "status": "passed",
+      "message": "3 file(s)"
+    },
+    {
+      "name": "Project detected",
+      "status": "warning",
+      "message": "no known language detected"
+    },
+    {
+      "name": "AI review",
+      "status": "skipped",
+      "message": "AI review unavailable: AnthropicProvider requires an API key. Set AI_API_KEY (or ANTHROPIC_API_KEY) in the API server's environment."
+    }
+  ],
+  "issues": [],
+  "suggestions": [],
+  "metadata": {
+    "filesReviewed": 3,
+    "linesReviewed": 509,
+    "duration": 394,
+    "languages": []
+  }
+}

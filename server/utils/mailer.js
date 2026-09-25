@@ -1,25 +1,23 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// Uses Gmail "service" shorthand — no SMTP host/port needed.
-// Requires SMTP_USER to be a Gmail address and SMTP_PASS to be a Gmail App Password.
-// To generate an App Password: Google Account → Security → 2-Step Verification → App Passwords
-let transporter = null;
-const createTransporter = () => {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      // Fail fast on Render cold-starts — don't let a broken SMTP connection
-      // stall the event loop for the OS TCP timeout (~2 minutes).
-      connectionTimeout: 10_000,  // 10 s to establish TCP connection
-      greetingTimeout:   10_000,  // 10 s to receive the SMTP greeting (220)
-      socketTimeout:     15_000,  // 15 s of inactivity before giving up
-    });
+// Resend Email Client
+// Uses RESEND_API_KEY from environment variables.
+// Default sender is FROM_EMAIL or onboarding@resend.dev for testing.
+let resendClient = null;
+const getResendClient = () => {
+  if (!resendClient) {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('⚠️ RESEND_API_KEY is not set. Resend emails will fail.');
+    }
+    resendClient = new Resend(process.env.RESEND_API_KEY);
   }
-  return transporter;
+  return resendClient;
+};
+
+const getFromAddress = () => {
+  const fromName = process.env.FROM_NAME || 'STEMEd';
+  const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+  return `"${fromName}" <${fromEmail}>`;
 };
 
 // ── Email Templates ──────────────────────────────────────────────────────────
@@ -63,7 +61,7 @@ const baseTemplate = (content) => `
 // ── Verification Email ───────────────────────────────────────────────────────
 
 exports.sendVerificationEmail = async (user, verificationUrl) => {
-  const transporter = createTransporter();
+  const resend = getResendClient();
   const html = baseTemplate(`
     <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">Verify your email address</h2>
     <p style="margin:0 0 24px;color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -79,18 +77,24 @@ exports.sendVerificationEmail = async (user, verificationUrl) => {
     </p>
   `);
 
-  await transporter.sendMail({
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+  const { data, error } = await resend.emails.send({
+    from: getFromAddress(),
     to: user.email,
     subject: '✅ Verify your STEMEd account',
     html,
   });
+
+  if (error) {
+    throw new Error(`Resend verification email failed: ${error.message || JSON.stringify(error)}`);
+  }
+
+  return data;
 };
 
 // ── Password Reset Email ─────────────────────────────────────────────────────
 
 exports.sendPasswordResetEmail = async (user, resetUrl) => {
-  const transporter = createTransporter();
+  const resend = getResendClient();
   const html = baseTemplate(`
     <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">Reset your password</h2>
     <p style="margin:0 0 24px;color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -106,12 +110,18 @@ exports.sendPasswordResetEmail = async (user, resetUrl) => {
     </p>
   `);
 
-  await transporter.sendMail({
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+  const { data, error } = await resend.emails.send({
+    from: getFromAddress(),
     to: user.email,
     subject: '🔑 Password Reset - STEMEd',
     html,
   });
+
+  if (error) {
+    throw new Error(`Resend password reset email failed: ${error.message || JSON.stringify(error)}`);
+  }
+
+  return data;
 };
 
 // ── Mentoring Email Notifications ────────────────────────────────────────────
@@ -265,12 +275,19 @@ exports.sendMentoringEmail = async (type, booking) => {
   if (!template) return;
   const { to, subject, body } = template(booking);
   if (!to) return;
-  const transporter = createTransporter();
-  await transporter.sendMail({
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+  const resend = getResendClient();
+  const { data, error } = await resend.emails.send({
+    from: getFromAddress(),
     to,
     subject,
     html: baseTemplate(body),
   });
+
+  if (error) {
+    console.error(`Resend mentoring email failed (${type}):`, error.message || error);
+    throw new Error(`Resend mentoring email failed: ${error.message || JSON.stringify(error)}`);
+  }
+
+  return data;
 };
 
