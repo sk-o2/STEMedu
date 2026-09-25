@@ -79,7 +79,7 @@ const CourseDetailPage = () => {
         key: razorpayKey,
         amount: amount,
         currency: currency || 'INR',
-        name: 'STEMEd Courses',
+        name: 'STEMics Courses',
         description: course.title,
         order_id: orderId,
         prefill: {

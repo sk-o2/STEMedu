@@ -15,7 +15,7 @@ const getResendClient = () => {
 };
 
 const getFromAddress = () => {
-  const fromName = process.env.FROM_NAME || 'STEMEd';
+  const fromName = process.env.FROM_NAME || 'STEMics';
   const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
   return `"${fromName}" <${fromEmail}>`;
 };
@@ -28,7 +28,7 @@ const baseTemplate = (content) => `
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>STEMEd</title>
+  <title>STEMics</title>
 </head>
 <body style="margin:0;padding:0;background:#020202;font-family:'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#020202;padding:40px 20px;">
@@ -37,7 +37,7 @@ const baseTemplate = (content) => `
         
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#00f0ff,#0057ff);padding:32px 40px;text-align:center;">
-          <h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;letter-spacing:-1px;">⚡ STEMEd</h1>
+          <h1 style="margin:0;color:#fff;font-size:28px;font-weight:800;letter-spacing:-1px;">⚡ STEMics</h1>
           <p style="margin:8px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">Science · Technology · Engineering · Math</p>
         </td></tr>
 
@@ -48,7 +48,7 @@ const baseTemplate = (content) => `
 
         <!-- Footer -->
         <tr><td style="padding:24px 40px;border-top:1px solid rgba(255,255,255,0.08);text-align:center;">
-          <p style="margin:0;color:#5e6875;font-size:12px;">© ${new Date().getFullYear()} STEMEd. All rights reserved.</p>
+          <p style="margin:0;color:#5e6875;font-size:12px;">© ${new Date().getFullYear()} STEMics. All rights reserved.</p>
           <p style="margin:8px 0 0;color:#5e6875;font-size:12px;">If you did not request this email, please ignore it.</p>
         </td></tr>
 
@@ -65,7 +65,7 @@ exports.sendVerificationEmail = async (user, verificationUrl) => {
   const html = baseTemplate(`
     <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">Verify your email address</h2>
     <p style="margin:0 0 24px;color:#a0aab5;font-size:15px;line-height:1.6;">
-      Hi <strong style="color:#fff;">${user.name}</strong>, welcome to STEMEd! 🎉<br/>
+      Hi <strong style="color:#fff;">${user.name}</strong>, welcome to STEMics! 🎉<br/>
       Click the button below to verify your email and activate your account.
     </p>
     <a href="${verificationUrl}" style="display:inline-block;background:linear-gradient(135deg,#00f0ff,#0057ff);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:0.5px;">
@@ -80,7 +80,7 @@ exports.sendVerificationEmail = async (user, verificationUrl) => {
   const { data, error } = await resend.emails.send({
     from: getFromAddress(),
     to: user.email,
-    subject: '✅ Verify your STEMEd account',
+    subject: '✅ Verify your STEMics account',
     html,
   });
 
@@ -99,7 +99,7 @@ exports.sendPasswordResetEmail = async (user, resetUrl) => {
     <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">Reset your password</h2>
     <p style="margin:0 0 24px;color:#a0aab5;font-size:15px;line-height:1.6;">
       Hi <strong style="color:#fff;">${user.name}</strong>,<br/>
-      We received a request to reset your STEMEd password. Click the button below to set a new one.
+      We received a request to reset your STEMics password. Click the button below to set a new one.
     </p>
     <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#ff0055,#ff6b00);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:0.5px;">
       🔑 Reset Password
@@ -113,7 +113,7 @@ exports.sendPasswordResetEmail = async (user, resetUrl) => {
   const { data, error } = await resend.emails.send({
     from: getFromAddress(),
     to: user.email,
-    subject: '🔑 Password Reset - STEMEd',
+    subject: '🔑 Password Reset - STEMics',
     html,
   });
 
@@ -178,7 +178,7 @@ const bookingCard = (booking) => `
 const MENTORING_TEMPLATES = {
   booking_received_student: (b) => ({
     to: b.student?.email,
-    subject: `📅 Booking Received — ${b.bookingId} | STEMEd Mentoring`,
+    subject: `📅 Booking Received — ${b.bookingId} | STEMics Mentoring`,
     body: `
       <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">Booking Received! 🎉</h2>
       <p style="margin:0 0 4px;color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -191,7 +191,7 @@ const MENTORING_TEMPLATES = {
 
   new_booking_tutor: (b) => ({
     to: b.tutor?.email,
-    subject: `🔔 New Mentoring Request — ${b.bookingId} | STEMEd`,
+    subject: `🔔 New Mentoring Request — ${b.bookingId} | STEMics`,
     body: `
       <h2 style="margin:0 0 8px;color:#fff;font-size:22px;">New Booking Request!</h2>
       <p style="color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -204,7 +204,7 @@ const MENTORING_TEMPLATES = {
 
   booking_confirmed_student: (b) => ({
     to: b.student?.email,
-    subject: `✅ Session Confirmed — ${b.bookingId} | STEMEd Mentoring`,
+    subject: `✅ Session Confirmed — ${b.bookingId} | STEMics Mentoring`,
     body: `
       <h2 style="margin:0 0 8px;color:#00ff88;font-size:22px;">Session Confirmed! ✅</h2>
       <p style="color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -217,7 +217,7 @@ const MENTORING_TEMPLATES = {
 
   booking_rejected_student: (b) => ({
     to: b.student?.email,
-    subject: `❌ Session Cancelled — ${b.bookingId} | STEMEd Mentoring`,
+    subject: `❌ Session Cancelled — ${b.bookingId} | STEMics Mentoring`,
     body: `
       <h2 style="margin:0 0 8px;color:#ff003c;font-size:22px;">Session Not Available</h2>
       <p style="color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -231,7 +231,7 @@ const MENTORING_TEMPLATES = {
 
   booking_rescheduled_student: (b) => ({
     to: b.student?.email,
-    subject: `🔄 Session Rescheduled — ${b.bookingId} | STEMEd Mentoring`,
+    subject: `🔄 Session Rescheduled — ${b.bookingId} | STEMics Mentoring`,
     body: `
       <h2 style="margin:0 0 8px;color:#f59e0b;font-size:22px;">Session Rescheduled</h2>
       <p style="color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -244,7 +244,7 @@ const MENTORING_TEMPLATES = {
 
   meeting_link_added_student: (b) => ({
     to: b.student?.email,
-    subject: `🔗 Meeting Link Ready — ${b.bookingId} | STEMEd Mentoring`,
+    subject: `🔗 Meeting Link Ready — ${b.bookingId} | STEMics Mentoring`,
     body: `
       <h2 style="margin:0 0 8px;color:#00f0ff;font-size:22px;">Your Meeting Link is Ready! 🔗</h2>
       <p style="color:#a0aab5;font-size:15px;line-height:1.6;">
@@ -259,7 +259,7 @@ const MENTORING_TEMPLATES = {
 
   booking_cancelled_tutor: (b) => ({
     to: b.tutor?.email,
-    subject: `❌ Booking Cancelled — ${b.bookingId} | STEMEd`,
+    subject: `❌ Booking Cancelled — ${b.bookingId} | STEMics`,
     body: `
       <h2 style="margin:0 0 8px;color:#ff003c;font-size:22px;">Booking Cancelled</h2>
       <p style="color:#a0aab5;font-size:15px;line-height:1.6;">

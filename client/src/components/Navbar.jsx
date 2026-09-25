@@ -82,8 +82,10 @@ const Navbar = () => {
 
           {/* ── Logo ── */}
           <Link to="/" className="navbar-logo">
-            <div className="logo-icon"><Zap size={20} /></div>
-            <span className="logo-text">STEM<span className="logo-accent">edu</span></span>
+            <div className="logo-icon">
+              <img src="/favicon.svg" alt="STEMics" style={{ width: 24, height: 24, objectFit: 'contain' }} />
+            </div>
+            <span className="logo-text">STEM<span className="logo-accent">ics</span></span>
           </Link>
 
           {/* ── Desktop Nav Links ── */}

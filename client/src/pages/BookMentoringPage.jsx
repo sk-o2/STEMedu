@@ -164,7 +164,7 @@ const BookMentoringPage = () => {
         key: razorpayKey,
         amount: amount,
         currency: currency || 'INR',
-        name: 'STEMEd Mentoring',
+        name: 'STEMics Mentoring',
         description: `1-on-1 ${pkgInfo?.label || 'Mentoring'} Session`,
         order_id: orderId,
         prefill: {

@@ -1,7 +1,7 @@
 {
-  "name": "stem-edu-server",
+  "name": "stemics-server",
   "version": "1.0.0",
-  "description": "STEM Education Platform Backend",
+  "description": "STEMics Platform Backend",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {

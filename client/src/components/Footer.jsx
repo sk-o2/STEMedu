@@ -7,8 +7,10 @@ const Footer = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <Link to="/" className="footer-logo">
-            <div className="logo-icon"><Zap size={18} /></div>
-            <span>STEM<span style={{color:'var(--secondary)'}}>Ed</span></span>
+            <div className="logo-icon">
+              <img src="/favicon.svg" alt="STEMics" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+            </div>
+            <span>STEM<span style={{color:'var(--secondary)'}}>ics</span></span>
           </Link>
           <p className="footer-tagline">Empowering the next generation of innovators through hands-on STEM education.</p>
           <div className="footer-socials">
@@ -51,7 +53,7 @@ const Footer = () => (
       </div>
 
       <div className="footer-bottom">
-        <p>© {new Date().getFullYear()} STEMedu. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} STEMics. All rights reserved.</p>
         <div className="footer-bottom-links">
           <a href="#">Privacy Policy</a>
           <a href="#">Terms of Service</a>
