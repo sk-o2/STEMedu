@@ -13,8 +13,7 @@ node_modules/
 !.env.example
 
 # Build & Output directories
-dist/
-**/dist/
+
 build/
 **/build/
 
