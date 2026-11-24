@@ -5,7 +5,7 @@ const {
   enrollCourse, addReview, getFeaturedCourses, createCheckoutSession, stripeWebhook,
   createRazorpayCourseOrder, verifyRazorpayCoursePayment,
 } = require('../controllers/courseController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalAuth } = require('../middleware/auth');
 
 // Webhook needs to be before anything that parses body differently, though it is usually handled in index.js, but just in case we have a specific path:
 // However we mapped /api/courses/webhook in index.js for raw body.
@@ -14,7 +14,7 @@ router.post('/webhook', stripeWebhook);
 router.get('/', getCourses);
 router.get('/featured', getFeaturedCourses);
 router.post('/verify-razorpay-payment', protect, verifyRazorpayCoursePayment);
-router.get('/:slug', getCourse);
+router.get('/:slug', optionalAuth, getCourse);
 router.post('/', protect, authorize('admin', 'tutor'), createCourse);
 router.put('/:id', protect, authorize('admin', 'tutor'), updateCourse);
 router.delete('/:id', protect, authorize('admin'), deleteCourse);

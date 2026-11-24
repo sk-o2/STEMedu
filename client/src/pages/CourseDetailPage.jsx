@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Users, BookOpen, Clock, Award, Check, Lock, Play, ChevronDown, ChevronUp, Presentation, Gamepad2, FileText, Link as LinkIcon } from 'lucide-react';
+import { Star, Users, BookOpen, Clock, Award, Check, Lock, Play, ChevronDown, ChevronUp, Presentation, Gamepad2, FileText, Link as LinkIcon, Eye, X } from 'lucide-react';
 import { getCourse, enrollCourse, createCourseCheckout, createRazorpayCourseOrder, verifyRazorpayCoursePayment } from '../services/api';
 import { loadRazorpayScript } from '../utils/razorpay';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ const CourseDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [openSections, setOpenSections] = useState({});
+  const [previewModal, setPreviewModal] = useState({ isOpen: false, title: '', url: '', type: '' });
 
   useEffect(() => {
     getCourse(slug).then(r => setCourse(r.data.course)).catch(() => {}).finally(() => setLoading(false));
@@ -238,60 +239,302 @@ const CourseDetailPage = () => {
             )}
 
             {/* Curriculum */}
-            {course.curriculum?.length > 0 && (
-              <div id="course-curriculum" style={{ scrollMarginTop: '80px' }}>
-                <h2 style={{ fontSize: 22, marginBottom: 20 }}>Curriculum</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {course.curriculum.map((section, si) => (
-                    <div key={si} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-                      <button onClick={() => toggleSection(si)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'none', color: 'var(--text-primary)', fontWeight: 600 }}>
-                        <span>{section.title}</span>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-                          <span>{section.lessons?.length || 0} lessons</span>
-                          {openSections[si] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </div>
-                      </button>
-                      {openSections[si] && (
-                        <div style={{ borderTop: '1px solid var(--border)' }}>
-                          {section.lessons?.map((lesson, li) => {
-                            let Icon = Play;
-                            if (lesson.type === 'ppt') Icon = Presentation;
-                            else if (lesson.type === 'activity') Icon = Gamepad2;
-                            else if (lesson.type === 'pdf') Icon = FileText;
-                            else if (lesson.type === 'link') Icon = LinkIcon;
+            {course.curriculum?.length > 0 && (() => {
+              // Identify the single first PPT across the entire course curriculum
+              let firstPptLessonId = null;
+              for (const section of course.curriculum) {
+                for (const lesson of section.lessons || []) {
+                  if (lesson.type === 'ppt') {
+                    firstPptLessonId = lesson._id || lesson.title;
+                    break;
+                  }
+                }
+                if (firstPptLessonId) break;
+              }
 
-                            const isAccessible = lesson.isFree || enrolled;
+              return (
+                <div id="course-curriculum" style={{ scrollMarginTop: '80px' }}>
+                  <h2 style={{ fontSize: 22, marginBottom: 20 }}>Curriculum</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {course.curriculum.map((section, si) => (
+                      <div key={si} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                        <button onClick={() => toggleSection(si)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'none', color: 'var(--text-primary)', fontWeight: 600 }}>
+                          <span>{section.title}</span>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                            <span>{section.lessons?.length || 0} lessons</span>
+                            {openSections[si] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </div>
+                        </button>
+                        {openSections[si] && (
+                          <div style={{ borderTop: '1px solid var(--border)' }}>
+                            {section.lessons?.map((lesson, li) => {
+                              let Icon = Play;
+                              if (lesson.type === 'ppt') Icon = Presentation;
+                              else if (lesson.type === 'activity') Icon = Gamepad2;
+                              else if (lesson.type === 'pdf') Icon = FileText;
+                              else if (lesson.type === 'link') Icon = LinkIcon;
 
-                            return (
-                              <div key={li} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: li < section.lessons.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                                {isAccessible ? <Icon size={14} style={{ color: 'var(--primary-light)' }} /> : <Lock size={14} style={{ color: 'var(--text-muted)' }} />}
-                                
-                                {isAccessible && lesson.url ? (
-                                  <a href={lesson.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }} className="hover-link">
-                                    {lesson.title}
-                                  </a>
-                                ) : (
-                                  <span style={{ flex: 1, fontSize: 14, color: isAccessible ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                                    {lesson.title}
-                                  </span>
-                                )}
+                              const isFirstPpt = lesson.type === 'ppt' && (lesson._id ? lesson._id === firstPptLessonId : lesson.title === firstPptLessonId);
+                              // Non-enrolled users can ONLY view the single first PPT; everything else is locked
+                              const isAccessible = enrolled || isFirstPpt;
 
-                                {lesson.isFree && <span className="badge badge-free" style={{ fontSize: 10 }}>Free</span>}
-                                {lesson.duration && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{lesson.duration}m</span>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                              return (
+                                <div 
+                                  key={li} 
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 12, 
+                                    padding: '12px 20px', 
+                                    borderBottom: li < section.lessons.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                                    background: isFirstPpt && !enrolled ? 'rgba(99, 102, 241, 0.04)' : 'transparent'
+                                  }}
+                                >
+                                  {isAccessible ? (
+                                    <Icon size={14} style={{ color: 'var(--primary-light)' }} />
+                                  ) : (
+                                    <Lock size={14} style={{ color: 'var(--text-muted)' }} />
+                                  )}
+                                  
+                                  {isAccessible ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (enrolled) {
+                                          navigate(`/courses/lms/${course.slug}`);
+                                        } else if (lesson.url) {
+                                          setPreviewModal({ isOpen: true, title: lesson.title, url: lesson.url, type: lesson.type });
+                                        } else {
+                                          toast.error('Preview presentation is currently being prepared.');
+                                        }
+                                      }}
+                                      style={{
+                                        flex: 1,
+                                        fontSize: 14,
+                                        color: 'var(--text-primary)',
+                                        background: 'none',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        padding: 0,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8
+                                      }}
+                                      className="hover-link"
+                                    >
+                                      <span>{lesson.title}</span>
+                                    </button>
+                                  ) : (
+                                    <div 
+                                      onClick={() => toast.error('🔒 This lesson is locked. Enroll in the course to unlock full access.')}
+                                      style={{ 
+                                        flex: 1, 
+                                        fontSize: 14, 
+                                        color: 'var(--text-muted)', 
+                                        cursor: 'pointer',
+                                        userSelect: 'none'
+                                      }}
+                                      title="Locked — Enroll in course to unlock"
+                                    >
+                                      {lesson.title}
+                                    </div>
+                                  )}
+
+                                  {isFirstPpt && !enrolled && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (lesson.url) {
+                                          setPreviewModal({ isOpen: true, title: lesson.title, url: lesson.url, type: lesson.type });
+                                        } else {
+                                          toast.error('Preview presentation is currently being prepared.');
+                                        }
+                                      }}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        padding: '3px 8px',
+                                        borderRadius: 6,
+                                        background: 'rgba(99, 102, 241, 0.15)',
+                                        color: '#818cf8',
+                                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      <Eye size={12} /> Free to view
+                                    </button>
+                                  )}
+
+                                  {!isAccessible && (
+                                    <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                      <Lock size={11} /> Locked
+                                    </span>
+                                  )}
+
+                                  {lesson.duration && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{lesson.duration}m</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
           <div />
         </div>
       </div>
+
+      {/* View-Only Presentation Preview Modal (No download link) */}
+      {previewModal.isOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setPreviewModal({ isOpen: false, title: '', url: '', type: '' })}
+        >
+          <div 
+            style={{
+              background: '#13151f',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 960,
+              height: '85vh',
+              maxHeight: 720,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(255, 255, 255, 0.02)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
+                <span style={{
+                  background: 'rgba(99, 102, 241, 0.15)',
+                  color: '#818cf8',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap'
+                }}>
+                  <Eye size={13} /> Free Preview (View-Only)
+                </span>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {previewModal.title}
+                </h3>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => setPreviewModal({ isOpen: false, title: '', url: '', type: '' })}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#a0aab5',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  flexShrink: 0
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* View-Only Security Notice Banner */}
+            <div style={{
+              background: 'rgba(99, 102, 241, 0.08)',
+              borderBottom: '1px solid rgba(99, 102, 241, 0.15)',
+              padding: '8px 20px',
+              fontSize: 12,
+              color: '#a5b4fc',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap'
+            }}>
+              <span>🔒 View-only presentation mode. Downloading or exporting this content is restricted.</span>
+              {!enrolled && !course.isFree && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setPreviewModal({ isOpen: false, title: '', url: '', type: '' });
+                    handleCheckout();
+                  }}
+                  style={{
+                    background: '#6366f1',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '4px 12px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Unlock Full Course
+                </button>
+              )}
+            </div>
+
+            {/* Embedded Presentation Viewer */}
+            <div style={{ flex: 1, background: '#1e202e', position: 'relative', overflow: 'hidden' }}>
+              {previewModal.url ? (
+                <iframe 
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewModal.url)}&embedded=true`}
+                  title={previewModal.title}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 'none', width: '100%', height: '100%' }}
+                />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#a0aab5' }}>
+                  Preview presentation is not available.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

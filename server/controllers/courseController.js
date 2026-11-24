@@ -33,6 +33,37 @@ exports.getCourse = async (req, res, next) => {
       .populate('instructor', 'name avatar bio')
       .populate('studentsEnrolled', '_id');
     if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    // Check if requester has full access
+    const isEnrolled = req.user && (
+      req.user.role === 'admin' ||
+      req.user.role === 'tutor' ||
+      course.studentsEnrolled?.some(s => s._id.toString() === req.user._id.toString())
+    );
+
+    // If not enrolled and not a free course, only allow the first PPT to have a URL (free preview)
+    if (!isEnrolled && !course.isFree) {
+      const courseObj = course.toObject();
+      let firstPptFound = false;
+
+      if (courseObj.curriculum) {
+        courseObj.curriculum.forEach(section => {
+          if (section.lessons) {
+            section.lessons.forEach(lesson => {
+              if (lesson.type === 'ppt' && !firstPptFound) {
+                lesson.isFree = true;
+                firstPptFound = true;
+              } else {
+                lesson.isFree = false;
+                delete lesson.url;
+              }
+            });
+          }
+        });
+      }
+      return res.status(200).json({ success: true, course: courseObj });
+    }
+
     res.status(200).json({ success: true, course });
   } catch (err) { next(err); }
 };
